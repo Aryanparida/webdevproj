@@ -11,5 +11,5 @@ const user = require("./routes/user");
 //routes
 app.use("/api/v1",user);
 app.listen(process.env.PORT, () => {
-    console.log(`Server hii at port${process.env.PORT}`);
+    console.log(`Server hit at port${process.env.PORT}`);
 });
