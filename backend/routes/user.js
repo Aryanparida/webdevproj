@@ -2,6 +2,7 @@ const router = require("express").Router();
 const User = require("../models/user");
 const bcrypt = require("bcryptjs");
 const jwt= require("jsonwebtoken");
+const {authenticateToken} =require("./userAuth")
 
 //signup
 router.post("/sign-up",async(req,res) => {
@@ -48,8 +49,8 @@ router.post("/sign-up",async(req,res) => {
 router.post("/sign-in",async(req,res) => {
 
     try{
-        const {usename,password}= req.body;
-        const existingUser = await User.findOne({usename});
+        const {username,password}= req.body;
+        const existingUser = await User.findOne({username});
         if(!existingUser){
             res.status(400).json({message:"invalid credentials"});
         }
@@ -70,7 +71,7 @@ router.post("/sign-in",async(req,res) => {
                 });
             }
             else{
-                res.status(400).json({message:"invalid credentials"});
+                res.status(400).json({message:"invalid credentia"});
             }
         });
 
@@ -78,4 +79,15 @@ router.post("/sign-in",async(req,res) => {
         res.status(500).json({message:"internal server error"});
     }
 });
+// get user-information
+router.get("/get-user-information",authenticateToken, async (req,res)=>{
+    try{
+        const{id}= req.headers;
+        const data = await User.findById
+
+    }catch (error){
+        res.status(500).json({message:"internal server error"});
+
+    }
+}) 
 module.exports = router;
