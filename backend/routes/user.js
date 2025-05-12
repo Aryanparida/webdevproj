@@ -1,9 +1,8 @@
 const router = require("express").Router();
-const User = require("../models/user");
 const bcrypt = require("bcryptjs");
-const jwt= require("jsonwebtoken");
-const {authenticateToken} =require("./userAuth")
-
+const jwt = require("jsonwebtoken");
+const User = require("../models/user");
+const { authenticateToken } = require("./userAuth");
 //signup
 router.post("/sign-up",async(req,res) => {
 
@@ -33,7 +32,7 @@ router.post("/sign-up",async(req,res) => {
         const newUser= new User({
             username: username,
             email: email,
-            password:hashPass,
+            password: hashPass,
             address: address
         });
         await newUser.save();
@@ -44,50 +43,64 @@ router.post("/sign-up",async(req,res) => {
         res.status(500).json({message:"internal server error"});
     }
 });
-
-//signin 
-router.post("/sign-in",async(req,res) => {
-
-    try{
-        const {username,password}= req.body;
-        const existingUser = await User.findOne({username});
-        if(!existingUser){
-            res.status(400).json({message:"invalid credentials"});
+//login
+router.post("/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      const user = await User.findOne({ username });
+      if (!user) {
+        return res.status(400).json({ message: "Invalid Credentials" });
+      }
+      bcrypt.compare(password, user.password, (err, data) => {
+        if (data) {
+          const authClaims = [
+            { name: user.username },
+            { role: user.role },
+            { jti: jwt.sign({}, "bookStore123") },
+          ];
+          const token = jwt.sign({ authClaims }, "bookStore123", {
+            expiresIn: "30d",
+          });
+  
+          res.json({
+            _id: user._id,
+            role: user.role,
+            token,
+          });
+        } else {
+          return res.status(400).json({ message: "Invalid credentials" });
         }
-
-        await bcrypt.compare(password,existingUser.password,(err,data)=>{
-            if(data){
-                const authClaims=[
-                    {name:existingUser.username},
-                    {role:existingUser.role},
-                ];
-                const token= jwt.sign({authClaims},"bookStore123",{
-                    expiresIn:"30d",
-                })
-                res.status(200).json({
-                    id:existingUser._id,
-                    role:existingUser.role,
-                    token:token
-                });
-            }
-            else{
-                res.status(400).json({message:"invalid credentia"});
-            }
-        });
-
-    }catch (error) {
-        res.status(500).json({message:"internal server error"});
+      });
+    } catch (error) {
+      return res.status(400).json({ message: "Internal Error" });
     }
-});
-// get user-information
-router.get("/get-user-information",authenticateToken, async (req,res)=>{
-    try{
-        const{id}= req.headers;
-        const data = await User.findById
-
-    }catch (error){
-        res.status(500).json({message:"internal server error"});
-
+  });
+  
+  //Get Users (individual) Profile Data
+  router.get("/getUserData", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.headers;
+  
+      const data = await User.findById(id);
+      return res.status(200).json(data);
+    } catch (error) {
+      return res.status(500).json({ message: "An error occurred" });
     }
-}) 
-module.exports = router;
+  });
+  
+  //Update address
+  router.put("/update-user-address", authenticateToken, async (req, res) => {
+    try {
+      const { id } = req.headers;
+      const { address } = req.body;
+      await User.findByIdAndUpdate(id, { address });
+      return res.status(200).json({
+        status: "Success",
+        message: "Address updated successfully",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "An error occurred" });
+    }
+  });
+module.exports = router; 
